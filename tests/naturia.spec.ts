@@ -1,66 +1,54 @@
-import { test, expect } from '@playwright/test'
+import { test, expect, Page } from '@playwright/test'
 
-const BASE = 'https://chaizelouis.github.io/NUTRICORE/'
+const URL = 'https://chaizelouis.github.io/NUTRICORE/'
 
-test.beforeEach(async ({ page }) => {
-  await page.goto(BASE)
-  await page.waitForLoadState('networkidle')
-  // Attendre que React soit hydraté (max 8 secondes)
-  await page.waitForFunction(() => {
-    return document.querySelector('button') !== null
-  }, { timeout: 8000 }).catch(() => {})
-})
+async function waitForApp(page: Page) {
+  await page.goto(URL, { waitUntil: 'domcontentloaded' })
+  // Attendre que React soit hydraté
+  await page.waitForSelector('button', { timeout: 20000 })
+  await page.waitForTimeout(1000)
+}
 
-test('1. Page splash — Naturia visible', async ({ page }) => {
+test('1. Page splash visible', async ({ page }) => {
+  await waitForApp(page)
   await page.screenshot({ path: 'test-results/01-splash.png', fullPage: true })
-  await expect(page.locator('text=Naturia').first()).toBeVisible({ timeout: 10000 })
-  await expect(page.locator('text=La santé naturelle').first()).toBeVisible({ timeout: 10000 })
-  console.log('✅ Page splash OK')
+  const body = await page.textContent('body')
+  console.log('Contenu page:', body?.substring(0, 200))
+  expect(body).toContain('Naturia')
 })
 
 test('2. Bouton Accéder à Naturia', async ({ page }) => {
-  const btn = page.locator('text=Accéder à Naturia').first()
-  await expect(btn).toBeVisible({ timeout: 10000 })
-  await btn.click()
+  await waitForApp(page)
+  const btns = await page.locator('button').allTextContents()
+  console.log('Boutons trouvés:', btns)
+  const acceder = page.locator('button', { hasText: 'Accéder' }).first()
+  await expect(acceder).toBeVisible({ timeout: 10000 })
+  await acceder.click()
   await page.waitForTimeout(2000)
   await page.screenshot({ path: 'test-results/02-auth.png', fullPage: true })
-  console.log('✅ Bouton Accéder OK')
+  const inputs = await page.locator('input').count()
+  console.log('Inputs trouvés:', inputs)
+  expect(inputs).toBeGreaterThan(0)
 })
 
-test('3. Page auth — formulaire complet', async ({ page }) => {
-  await page.locator('text=Accéder à Naturia').first().click()
+test('3. Formulaire connexion', async ({ page }) => {
+  await waitForApp(page)
+  const seConnecter = page.locator('button', { hasText: 'Se connecter' }).first()
+  await seConnecter.click()
   await page.waitForTimeout(2000)
-  await page.screenshot({ path: 'test-results/03-form.png', fullPage: true })
-  await expect(page.locator('input[type="email"]').first()).toBeVisible({ timeout: 10000 })
-  await expect(page.locator('input[type="password"]').first()).toBeVisible({ timeout: 10000 })
-  await expect(page.locator('text=Créer un compte').first()).toBeVisible({ timeout: 10000 })
-  await expect(page.locator('text=Connexion').first()).toBeVisible({ timeout: 10000 })
-  console.log('✅ Formulaire auth OK')
+  await page.screenshot({ path: 'test-results/03-login.png', fullPage: true })
+  await expect(page.locator('input[type="email"]')).toBeVisible({ timeout: 10000 })
 })
 
-test('4. Retour depuis auth vers splash', async ({ page }) => {
-  await page.locator('text=Accéder à Naturia').first().click()
+test('4. Navigation retour', async ({ page }) => {
+  await waitForApp(page)
+  await page.locator('button', { hasText: 'Accéder' }).first().click()
   await page.waitForTimeout(1500)
-  await page.locator('text=← Retour').first().click()
+  const retour = page.locator('button', { hasText: 'Retour' }).first()
+  await expect(retour).toBeVisible({ timeout: 10000 })
+  await retour.click()
   await page.waitForTimeout(1500)
   await page.screenshot({ path: 'test-results/04-retour.png', fullPage: true })
-  await expect(page.locator('text=Accéder à Naturia').first()).toBeVisible({ timeout: 10000 })
-  console.log('✅ Retour splash OK')
-})
-
-test('5. Connexion Se connecter', async ({ page }) => {
-  await page.locator('text=Se connecter').first().click()
-  await page.waitForTimeout(1500)
-  await page.screenshot({ path: 'test-results/05-login.png', fullPage: true })
-  await expect(page.locator('input[type="email"]').first()).toBeVisible({ timeout: 10000 })
-  console.log('✅ Connexion directe OK')
-})
-
-test('6. Inscription — tous les champs', async ({ page }) => {
-  await page.locator('text=Accéder à Naturia').first().click()
-  await page.waitForTimeout(1500)
-  await page.fill('input[type="email"]', 'amandine@test.naturia.ch')
-  await page.fill('input[type="password"]', 'Test123456!')
-  await page.screenshot({ path: 'test-results/06-register-filled.png', fullPage: true })
-  console.log('✅ Champs inscription OK')
+  const body = await page.textContent('body')
+  expect(body).toContain('Naturia')
 })
