@@ -24,15 +24,19 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install chromium --with-deps
 
-      - name: Wait for deployment
-        run: sleep 45
+      - name: Build app
+        run: npm run build
+
+      - name: Install serve
+        run: npm install -g serve
 
       - name: Run Playwright tests
         run: npx playwright test
         env:
           CI: true
+          BASE_URL: http://localhost:3000
 
-      - name: Upload screenshots
+      - name: Upload screenshots & report
         uses: actions/upload-artifact@v4
         if: always()
         with:
