@@ -8,15 +8,15 @@ export default defineConfig({
   outputDir: 'test-results',
   reporter: [
     ['html', { outputFolder: 'playwright-report', open: 'never' }],
-    ['json', { outputFile: 'test-results/results.json' }],
     ['list']
   ],
   use: {
     baseURL: 'https://chaizelouis.github.io/NUTRICORE/',
     trace: 'retain-on-failure',
-    screenshot: 'on',
+    screenshot: 'always',
     video: 'retain-on-failure',
     actionTimeout: 30000,
+    navigationTimeout: 60000,
   },
   projects: [
     { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
