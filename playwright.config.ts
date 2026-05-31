@@ -1,6 +1,6 @@
 import { defineConfig, devices } from '@playwright/test'
 
-const baseURL = process.env.BASE_URL || 'http://localhost:3000'
+const baseURL = process.env.BASE_URL || 'http://localhost:3000/NUTRICORE'
 
 export default defineConfig({
   testDir: './tests',
@@ -8,7 +8,7 @@ export default defineConfig({
   retries: 1,
   timeout: 60000,
   outputDir: 'test-results',
-  reporter: [['list'], ['json', { outputFile: 'test-results/results.json' }]],
+  reporter: [['list']],
   use: {
     baseURL,
     trace: 'retain-on-failure',
@@ -17,8 +17,8 @@ export default defineConfig({
     navigationTimeout: 45000,
   },
   webServer: {
-    command: 'serve out -p 3000',
-    url: baseURL,
+    command: 'serve serve-root -p 3000',
+    url: 'http://localhost:3000',
     reuseExistingServer: !process.env.CI,
     timeout: 60000,
   },

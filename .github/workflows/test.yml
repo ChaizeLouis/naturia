@@ -27,6 +27,12 @@ jobs:
       - name: Build app
         run: npm run build
 
+      - name: Setup serve structure
+        run: |
+          mkdir -p serve-root/NUTRICORE
+          cp -r out/* serve-root/NUTRICORE/
+          cp out/index.html serve-root/index.html
+
       - name: Install serve
         run: npm install -g serve
 
@@ -34,7 +40,7 @@ jobs:
         run: npx playwright test
         env:
           CI: true
-          BASE_URL: http://localhost:3000
+          BASE_URL: http://localhost:3000/NUTRICORE
 
       - name: Upload screenshots & report
         uses: actions/upload-artifact@v4
@@ -43,5 +49,4 @@ jobs:
           name: playwright-results-${{ github.run_number }}
           path: |
             test-results/
-            playwright-report/
           retention-days: 7
