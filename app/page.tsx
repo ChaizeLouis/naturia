@@ -9,18 +9,28 @@ export default function Home() {
   const [status, setStatus] = useState<'loading'|'splash'|'auth'|'app'>('loading')
   const [user, setUser] = useState<any>(null)
   const [authTab, setAuthTab] = useState<'login'|'register'>('login')
-  const supabase = createClient()
 
   useEffect(() => {
+    const supabase = createClient()
+    
+    // Timeout de sécurité : si Supabase met trop de temps → splash
+    const timeout = setTimeout(() => setStatus('splash'), 3000)
+    
     supabase.auth.getSession().then(({ data: { session } }) => {
+      clearTimeout(timeout)
       if (session) { setUser(session.user); setStatus('app') }
       else setStatus('splash')
+    }).catch(() => {
+      clearTimeout(timeout)
+      setStatus('splash')
     })
+    
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
       if (session) { setUser(session.user); setStatus('app') }
-      else setStatus('splash')
+      else if (status !== 'loading') setStatus('splash')
     })
-    return () => subscription.unsubscribe()
+    
+    return () => { subscription.unsubscribe(); clearTimeout(timeout) }
   }, [])
 
   if (status === 'loading') return (

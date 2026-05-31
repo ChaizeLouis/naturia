@@ -13,7 +13,7 @@ export default defineConfig({
   use: {
     baseURL: 'https://chaizelouis.github.io/NUTRICORE/',
     trace: 'retain-on-failure',
-    screenshot: 'always',
+    screenshot: 'only-on-failure',
     video: 'retain-on-failure',
     actionTimeout: 30000,
     navigationTimeout: 60000,
