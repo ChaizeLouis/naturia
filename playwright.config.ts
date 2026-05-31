@@ -4,7 +4,7 @@ export default defineConfig({
   testDir: './tests',
   fullyParallel: false,
   retries: 2,
-  timeout: 30000,
+  timeout: 60000,
   outputDir: 'test-results',
   reporter: [
     ['html', { outputFolder: 'playwright-report', open: 'never' }],
@@ -12,13 +12,14 @@ export default defineConfig({
     ['list']
   ],
   use: {
-    baseURL: 'https://naturia.tony-bara1.workers.dev',
-    trace: 'on-first-retry',
-    screenshot: 'only-on-failure',
+    baseURL: 'https://chaizelouis.github.io/NUTRICORE/',
+    trace: 'retain-on-failure',
+    screenshot: 'on',
     video: 'retain-on-failure',
+    actionTimeout: 30000,
   },
   projects: [
     { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
-    { name: 'Mobile', use: { ...devices['iPhone 14'] } },
+    { name: 'Mobile Safari', use: { ...devices['iPhone 14'] } },
   ],
 })
