@@ -1,0 +1,74 @@
+name: Deploy & Test Naturia
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    outputs:
+      deployment_url: ${{ steps.deploy.outputs.url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Vercel CLI
+        run: npm install -g vercel
+
+      - name: Deploy to Vercel
+        id: deploy
+        run: |
+          URL=$(vercel deploy --token=${{ secrets.VERCEL_TOKEN }} --yes --prod 2>/dev/null | tail -1)
+          echo "url=$URL" >> $GITHUB_OUTPUT
+          echo "✅ Déployé sur: $URL"
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+  test:
+    needs: deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright
+        run: npx playwright install chromium --with-deps
+
+      - name: Test on real deployed site
+        run: npx playwright test
+        env:
+          CI: true
+          BASE_URL: ${{ needs.deploy.outputs.deployment_url }}
+
+      - name: Notify Make if tests fail
+        if: failure()
+        run: |
+          curl -X POST https://hook.eu1.make.com/otchv73pv3ffjwflwm8js9haf9mzi6jj \
+            -H "Content-Type: application/json" \
+            -d "{\"title\":\"❌ Tests Naturia échoués\",\"url\":\"${{ needs.deploy.outputs.deployment_url }}\",\"run\":\"${{ github.run_number }}\",\"commit\":\"${{ github.sha }}\"}"
+
+      - name: Upload results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results-${{ github.run_number }}
+          path: test-results/
+          retention-days: 7
