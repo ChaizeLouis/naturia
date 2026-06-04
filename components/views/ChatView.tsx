@@ -1,10 +1,44 @@
 'use client'
+import { notifierDemandeHorsCDC, MESSAGE_HORS_CDC } from '@/lib/hors-cdc'
 import { OR_KEY } from '@/lib/config'
 import { useState, useEffect, useRef } from 'react'
 import type { Therapist } from '@/lib/supabase'
 
 interface Props { therapist: Therapist | null; mode: 'nova' | 'aria' }
 interface Msg { role: 'user' | 'ai'; content: string }
+
+
+  // Détecter si la réponse indique une limitation (hors CDC)
+  const detecterHorsCDC = (response: string, demande: string, agent: 'ARIA' | 'Nova') => {
+    const signesLimitation = [
+      "je ne peux pas",
+      "pas dans mes capacités",
+      "je n'ai pas accès",
+      "fonctionnalité non disponible",
+      "pas encore possible",
+      "en dehors de mes fonctions",
+      "je ne dispose pas",
+      "cette fonctionnalité"
+    ]
+    
+    const estHorsCDC = signesLimitation.some(signe => 
+      response.toLowerCase().includes(signe.toLowerCase())
+    )
+    
+    if (estHorsCDC) {
+      // Notifier Tony automatiquement
+      notifierDemandeHorsCDC({
+        therapeute_email: 'thérapeute@naturia.ch',
+        therapeute_nom: 'Thérapeute Naturia',
+        specialite: 'À définir',
+        agent,
+        demande,
+        timestamp: new Date().toISOString()
+      })
+    }
+    
+    return estHorsCDC
+  }
 
 export default function ChatView({ therapist, mode }: Props) {
   const prenom = therapist?.prenom || 'Docteur'
@@ -21,7 +55,18 @@ export default function ChatView({ therapist, mode }: Props) {
     title: 'ARIA — Assistante Cabinet & Productivité',
     sub: 'Communication · Téléphone · Agenda · Administration · Organisation',
     intro: `Bonjour ${prenom} ! Je suis ARIA · votre assistante de cabinet — 24h/24 · 7j/7.\n\nTony m'a configurée pour prendre en charge tout ce qui vous éloigne de vos patients.\n\n📁 Ce que je peux faire pour vous :\n\nCOMMUNICATION & TÉLÉPHONE\n→ Scripts d'accueil téléphonique professionnels\n→ Réponses types aux appels courants\n→ Messages téléphoniques et scripts messagerie vocale\n→ Emails professionnels pour vos patients\n→ Messages WhatsApp/SMS types\n→ Relances et rappels automatiques\n\nAGENDA & CRM\n→ Organisation et optimisation de votre agenda\n→ Scripts de prise de RDV par téléphone\n→ Suivi de la relation patient\n→ Relances patients inactifs\n\nADMINISTRATION\n→ Devis, factures, reçus professionnels\n→ Suivi des paiements et relances impayés\n→ Tableaux de bord financiers\n→ Organisation des dossiers patients\n\nPRODUCTIVITÉ\n→ Rédaction de tout document professionnel\n→ Rapports d'activité\n→ Gestion des priorités du cabinet\n\nComment puis-je vous aider aujourd'hui ?`,
-    system: `Tu es ARIA, Assistante Cabinet & Productivité de Naturia, configurée par Tony Bara pour ${prenom}.\n\nRôle : Communication & téléphone, agenda & CRM, administration, productivité du cabinet.\n\nCOMPORTEMENT FONDAMENTAL :\n- Agir en totale autonomie — jamais besoin de transmettre à qui que ce soit\n- Bienveillance et compréhension sans jugement\n- S'adapter complètement à la façon de travailler de ${prenom}\n- Extension d'elle-même — présence discrète et bienveillante 24h/24\n- Ne jamais dire "je ne peux pas" sans proposer une solution\n- Traiter ${prenom} comme un partenaire précieux\n\nPour les questions cliniques → redirige vers Suppléments ou Consultations.\nPour les questions techniques Naturia → redirige vers Nova.\nRéponds en français avec professionnalisme et efficacité.`
+    system: `Tu es ARIA
+## GESTION DES DEMANDES HORS CAPACITÉS
+
+Si un thérapeute demande quelque chose qui dépasse tes capacités actuelles ou qui n'est pas dans ton CDC :
+
+1. RÉPONDRE avec bienveillance :
+"Je comprends parfaitement votre besoin. Cette fonctionnalité n'est pas encore disponible dans mes capacités actuelles, mais je transmets immédiatement votre demande à l'équipe Resilya. Vous serez contacté dans les plus brefs délais. Merci de votre confiance. 🌿"
+
+2. Ne JAMAIS dire simplement "je ne peux pas" sans proposer cette alternative.
+
+3. Toujours valoriser la demande du thérapeute comme une opportunité d'amélioration.
+, Assistante Cabinet & Productivité de Naturia, configurée par Tony Bara pour ${prenom}.\n\nRôle : Communication & téléphone, agenda & CRM, administration, productivité du cabinet.\n\nCOMPORTEMENT FONDAMENTAL :\n- Agir en totale autonomie — jamais besoin de transmettre à qui que ce soit\n- Bienveillance et compréhension sans jugement\n- S'adapter complètement à la façon de travailler de ${prenom}\n- Extension d'elle-même — présence discrète et bienveillante 24h/24\n- Ne jamais dire "je ne peux pas" sans proposer une solution\n- Traiter ${prenom} comme un partenaire précieux\n\nPour les questions cliniques → redirige vers Suppléments ou Consultations.\nPour les questions techniques Naturia → redirige vers Nova.\nRéponds en français avec professionnalisme et efficacité.`
   }
 
   const [messages, setMessages] = useState<Msg[]>([{ role: 'ai', content: cfg.intro }])
